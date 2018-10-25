@@ -11,7 +11,7 @@ config NDS32
 	select CLKSRC_MMIO
 	select CLONE_BACKWARDS
 	select COMMON_CLK
-	select DMA_NONCOHERENT_OPS
+	select DMA_DIRECT_OPS
 	select GENERIC_ATOMIC64
 	select GENERIC_CPU_DEVICES
 	select GENERIC_CLOCKEVENTS
@@ -40,6 +40,10 @@ config NDS32
 	select NO_IOPORT_MAP
 	select RTC_LIB
 	select THREAD_INFO_IN_TASK
+	select HAVE_FUNCTION_TRACER
+	select HAVE_FUNCTION_GRAPH_TRACER
+	select HAVE_FTRACE_MCOUNT_RECORD
+	select HAVE_DYNAMIC_FTRACE
 	help
 	  Andes(nds32) Linux support.
 

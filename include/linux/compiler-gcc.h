@@ -79,20 +79,6 @@
 #define __noretpoline __attribute__((indirect_branch("keep")))
 #endif
 
-/*
- * it doesn't make sense on ARM (currently the only user of __naked)
- * to trace naked functions because then mcount is called without
- * stack and frame pointer being set up and there is no chance to
- * restore the lr register to the value before mcount was called.
- *
- * The asm() bodies of naked functions often depend on standard calling
- * conventions, therefore they must be noinline and noclone.
- *
- * GCC 4.[56] currently fail to enforce this, so we must do so ourselves.
- * See GCC PR44290.
- */
-#define __naked		__attribute__((naked)) noinline __noclone notrace
-
 #define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
 
 #define __optimize(level)	__attribute__((__optimize__(level)))
@@ -208,6 +194,12 @@
  * Conflicts with inlining: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67368
  */
 #define __no_sanitize_address __attribute__((no_sanitize_address))
+#ifdef CONFIG_KASAN
+#define __no_sanitize_address_or_inline					\
+	__no_sanitize_address __maybe_unused notrace
+#else
+#define __no_sanitize_address_or_inline inline
+#endif
 #endif
 
 #if GCC_VERSION >= 50100
@@ -225,6 +217,7 @@
 
 #if !defined(__no_sanitize_address)
 #define __no_sanitize_address
+#define __no_sanitize_address_or_inline inline
 #endif
 
 /*

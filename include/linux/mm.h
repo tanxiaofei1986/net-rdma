@@ -890,6 +890,19 @@ static inline bool is_device_public_page(const struct page *page)
 		page->pgmap->type == MEMORY_DEVICE_PUBLIC;
 }
 
+#ifdef CONFIG_PCI_P2PDMA
+static inline bool is_pci_p2pdma_page(const struct page *page)
+{
+	return is_zone_device_page(page) &&
+		page->pgmap->type == MEMORY_DEVICE_PCI_P2PDMA;
+}
+#else /* CONFIG_PCI_P2PDMA */
+static inline bool is_pci_p2pdma_page(const struct page *page)
+{
+	return false;
+}
+#endif /* CONFIG_PCI_P2PDMA */
+
 #else /* CONFIG_DEV_PAGEMAP_OPS */
 static inline void dev_pagemap_get_ops(void)
 {
@@ -910,6 +923,11 @@ static inline bool is_device_private_page(const struct page *page)
 }
 
 static inline bool is_device_public_page(const struct page *page)
+{
+	return false;
+}
+
+static inline bool is_pci_p2pdma_page(const struct page *page)
 {
 	return false;
 }
@@ -2453,6 +2471,12 @@ static inline struct vm_area_struct *find_exact_vma(struct mm_struct *mm,
 		vma = NULL;
 
 	return vma;
+}
+
+static inline bool range_in_vma(struct vm_area_struct *vma,
+				unsigned long start, unsigned long end)
+{
+	return (vma && vma->vm_start <= start && end <= vma->vm_end);
 }
 
 #ifdef CONFIG_MMU

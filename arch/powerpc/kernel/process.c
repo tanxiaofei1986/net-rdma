@@ -620,8 +620,6 @@ void do_send_trap(struct pt_regs *regs, unsigned long address,
 void do_break (struct pt_regs *regs, unsigned long address,
 		    unsigned long error_code)
 {
-	siginfo_t info;
-
 	current->thread.trap_nr = TRAP_HWBKPT;
 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
 			11, SIGSEGV) == NOTIFY_STOP)
@@ -634,12 +632,7 @@ void do_break (struct pt_regs *regs, unsigned long address,
 	hw_breakpoint_disable();
 
 	/* Deliver the signal to userspace */
-	clear_siginfo(&info);
-	info.si_signo = SIGTRAP;
-	info.si_errno = 0;
-	info.si_code = TRAP_HWBKPT;
-	info.si_addr = (void __user *)address;
-	force_sig_info(SIGTRAP, &info, current);
+	force_sig_fault(SIGTRAP, TRAP_HWBKPT, (void __user *)address, current);
 }
 #endif	/* CONFIG_PPC_ADV_DEBUG_REGS */
 
@@ -1305,6 +1298,16 @@ void show_user_instructions(struct pt_regs *regs)
 	int i;
 
 	pc = regs->nip - (instructions_to_print * 3 / 4 * sizeof(int));
+
+	/*
+	 * Make sure the NIP points at userspace, not kernel text/data or
+	 * elsewhere.
+	 */
+	if (!__access_ok(pc, instructions_to_print * sizeof(int), USER_DS)) {
+		pr_info("%s[%d]: Bad NIP, not dumping instructions.\n",
+			current->comm, current->pid);
+		return;
+	}
 
 	pr_info("%s[%d]: code: ", current->comm, current->pid);
 
